@@ -35,6 +35,7 @@ public class DevLogin {
         ArgumentAcceptingOptionSpec<String> usernameSpec = parser.accepts("username").withRequiredArg();
         ArgumentAcceptingOptionSpec<String> passwordSpec = parser.accepts("password").withRequiredArg();
         ArgumentAcceptingOptionSpec<String> mimicPlayerSpec = parser.accepts("mimicPlayer").withRequiredArg();
+        ArgumentAcceptingOptionSpec<String> azureClientSpec = parser.accepts("azureClient").withRequiredArg().defaultsTo("null");
         // MSA-related args don't need any values
         parser.accepts("msa");
         parser.accepts("msa-nostore");
@@ -54,7 +55,7 @@ public class DevLogin {
         // The priority is as follows: mimicking -> msa -> moj
         AuthenticationProfile profile = options.has(mimicPlayerSpec) ? mimicPlayer(proxy, options.valueOf(mimicPlayerSpec)) : // Mimic player
                 options.has("msa") || options.has("msa-nostore") ? // MSA login
-                        loginMSA(proxy, options.has("msa"), options.has("msa-no-dialog")) :
+                        loginMSA(proxy, options.valueOf(azureClientSpec), options.has("msa"), options.has("msa-no-dialog")) :
                 options.has(usernameSpec) && options.has(passwordSpec) || // Moj login
                         env.containsKey("MinecraftUsername") && env.containsKey("MinecraftPassword") ? //
                         loginMoj(proxy, options.has(usernameSpec) ? options.valueOf(usernameSpec) : env.get("MinecraftUsername"),
@@ -167,10 +168,10 @@ public class DevLogin {
      * @param noDialog Whether to print the code in the console or show a dialog containing it.
      * @return Either an {@link AuthenticationProfile} or {@code null} if the login was unsuccessful
      */
-    private static AuthenticationProfile loginMSA(Proxy proxy, boolean store, boolean noDialog) {
+    private static AuthenticationProfile loginMSA(Proxy proxy, String azureClientID, boolean store, boolean noDialog) {
         try {
             try {
-                MSA.login(proxy, store, noDialog);
+                MSA.login(proxy, azureClientID, store, noDialog);
             } catch (Exception e) {
                 LOG.error("Could not login using Microsoft account.", e);
                 return null;

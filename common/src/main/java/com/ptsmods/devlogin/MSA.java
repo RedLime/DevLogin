@@ -23,10 +23,7 @@ import java.awt.event.WindowEvent;
 import java.io.*;
 import java.net.*;
 import java.nio.file.Files;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +40,8 @@ public class MSA {
     private static AsyncHttpClient client;
     private static final Pattern urlPattern = Pattern.compile("<a href=\"(.*?)\">.*?</a>"), tagPattern = Pattern.compile("<([A-Za-z]*?).*?>(.*?)</\\1>");
     private static final File tokenFile = new File("DevLoginCache.json");
-    private static final String CLIENT_ID = "bfcbedc1-f14e-441f-a136-15aec874e6c2"; // DevLogin Azure application client id
+    private static final String DEFAULT_CLIENT_ID = "bfcbedc1-f14e-441f-a136-15aec874e6c2"; // DevLogin Azure application client id
+    private static String CLIENT_ID;
     private static boolean noDialog = false;
     private static JFrame mainDialog;
     private static String deviceCode; // Strings sorted by steps they're acquired in.
@@ -56,13 +54,15 @@ public class MSA {
 
     /**
      * Takes all the necessary steps to get a Minecraft token from a Microsoft account.
-     * @param proxy The proxy to route requests through.
+     *
+     * @param proxy             The proxy to route requests through.
+     * @param azureClientID     "null" or azure client id for requests
      * @param storeRefreshToken Whether the refresh token should be stored for later use.
-     * @param noDialog Whether to print the code to the console or show a dialog
-     * @throws IOException If anything goes wrong with the requests.
+     * @param noDialog          Whether to print the code to the console or show a dialog
+     * @throws IOException          If anything goes wrong with the requests.
      * @throws InterruptedException If the thread gets interrupted while waiting.
      */
-    public static void login(Proxy proxy, boolean storeRefreshToken, boolean noDialog) throws IOException, InterruptedException {
+    public static void login(Proxy proxy, String azureClientID, boolean storeRefreshToken, boolean noDialog) throws IOException, InterruptedException {
         try {
             if (!noDialog) System.setProperty("java.awt.headless", "false"); // Can't display dialogs otherwise.
 
@@ -82,6 +82,8 @@ public class MSA {
             client = new DefaultAsyncHttpClient();
 
             MSA.noDialog = noDialog;
+
+            CLIENT_ID = Objects.equals(azureClientID, "null") ? DEFAULT_CLIENT_ID : azureClientID;
 
             if (tokenFile.exists()) {
                 Map<String, String> data = MoreObjects.firstNonNull(readData(), Collections.emptyMap());
